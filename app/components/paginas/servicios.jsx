@@ -144,7 +144,7 @@ const servicios = [
 
 // Hook para saber cuántas cards mostrar según viewport
 function useVisibleCount() {
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(1);
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -159,8 +159,69 @@ function useVisibleCount() {
   return count;
 }
 
+// Hook para saber si estamos en mobile
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < breakpoint);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+// Componente Card reutilizable
+function ServiceCard({ servicio, onClick, className = "" }) {
+  const Icon = servicio.icon;
+  return (
+    <article
+      onClick={onClick}
+      className={`group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] text-left backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-10px_rgba(52,211,153,0.35)] ${className}`}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+
+      {/* Imagen */}
+      <div className="relative h-40 w-full overflow-hidden rounded-t-3xl sm:h-40">
+        <img
+          src={servicio.img}
+          alt={servicio.title}
+          loading="lazy"
+          className="h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105 group-hover:opacity-90"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b13] via-[#0b0b13]/40 to-transparent" />
+      </div>
+
+      {/* Contenido */}
+      <div className="relative p-5 pt-4 sm:p-6">
+        <div
+          className={`-mt-12 mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 backdrop-blur-md ${servicio.bg} ${servicio.color} ${servicio.ring}`}
+        >
+          <Icon size={24} strokeWidth={1.7} />
+        </div>
+
+        <h3 className="text-base font-bold sm:text-lg">{servicio.title}</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-400">
+          {servicio.description}
+        </p>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-slate-500 transition group-hover:text-emerald-400"
+        >
+          Más información <ChevronRight size={14} />
+        </button>
+      </div>
+    </article>
+  );
+}
+
 export default function Servicios() {
   const visible = useVisibleCount();
+  const isMobile = useIsMobile();
   const total = servicios.length;
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -203,17 +264,16 @@ export default function Servicios() {
   }, [selected]);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-5 py-16 text-center sm:px-8 lg:py-24">
+    <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-3 py-12 text-center sm:px-8 sm:py-16 lg:py-24">
       {/* Header centrado */}
       <div className="mb-10 flex w-full flex-col items-center gap-5">
         <div className="flex flex-col items-center">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
-            Nuestros servicios Soluciones para tecnología
+            Nuestros servicios
           </span>
-          <h3 className="mt-3 text-2xl font-bold tracking-tight sm:text-4xl">
+          <h3 className="mt-3 text-xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
             Servicios desde 100 mil pesos en adelante.
           </h3>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"></p>
         </div>
         <a
           href={getWhatsAppLink("tus servicios en general")}
@@ -225,44 +285,54 @@ export default function Servicios() {
         </a>
       </div>
 
-      {/* Carrusel */}
-      <div className="relative w-full">
-        <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
-          <div className="h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
+      {/* ===== MOBILE: GRID 1 COLUMNA ===== */}
+      {isMobile ? (
+        <div className="grid w-full grid-cols-1 gap-4">
+          {servicios.map((servicio, i) => (
+            <ServiceCard
+              key={i}
+              servicio={servicio}
+              onClick={() => setSelected(servicio)}
+            />
+          ))}
         </div>
+      ) : (
+        /* ===== DESKTOP / TABLET: CARRUSEL ===== */
+        <div className="relative w-full">
+          <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
+            <div className="h-[320px] w-[320px] rounded-full bg-emerald-500/10 blur-[120px] sm:h-[420px] sm:w-[420px]" />
+          </div>
 
-        {/* Flechas laterales */}
-        <button
-          onClick={prev}
-          aria-label="Anterior"
-          className="absolute left-0 top-1/2 z-20 hidden -translate-y-1/2 -translate-x-4 items-center justify-center rounded-full border border-white/10 bg-white/5 p-3 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400 sm:flex"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <button
-          onClick={next}
-          aria-label="Siguiente"
-          className="absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 translate-x-4 items-center justify-center rounded-full border border-white/10 bg-white/5 p-3 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400 sm:flex"
-        >
-          <ChevronRight size={20} />
-        </button>
+          {/* Flechas laterales */}
+          <button
+            onClick={prev}
+            aria-label="Anterior"
+            className="absolute left-0 top-1/2 z-20 hidden -translate-y-1/2 -translate-x-4 items-center justify-center rounded-full border border-white/10 bg-white/5 p-3 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400 sm:flex"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={next}
+            aria-label="Siguiente"
+            className="absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 translate-x-4 items-center justify-center rounded-full border border-white/10 bg-white/5 p-3 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400 sm:flex"
+          >
+            <ChevronRight size={20} />
+          </button>
 
-        {/* Pista del carrusel */}
-        <motion.div
-          className="flex w-full cursor-grab justify-center gap-4 active:cursor-grabbing"
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.15}
-          onDragEnd={(_, info) => {
-            if (info.offset.x < -60) next();
-            else if (info.offset.x > 60) prev();
-          }}
-        >
-          <AnimatePresence mode="popLayout" initial={false}>
-            {items.map((servicio, k) => {
-              const Icon = servicio.icon;
-              return (
-                <motion.article
+          {/* Pista del carrusel */}
+          <motion.div
+            className="flex w-full cursor-grab justify-center gap-4 active:cursor-grabbing"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -60) next();
+              else if (info.offset.x > 60) prev();
+            }}
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              {items.map((servicio, k) => (
+                <motion.div
                   key={`${servicio._i}-${k}`}
                   layout
                   initial={{ opacity: 0, x: direction * 60, scale: 0.9 }}
@@ -274,102 +344,51 @@ export default function Servicios() {
                     damping: 26,
                     mass: 0.7,
                   }}
-                  onClick={() => setSelected(servicio)}
-                  className="group relative shrink-0 cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] text-left backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-10px_rgba(52,211,153,0.35)] sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.667rem)]"
+                  className="w-full shrink-0 sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)]"
                 >
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+                  <ServiceCard
+                    servicio={servicio}
+                    onClick={() => setSelected(servicio)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
 
-                  {/* Imagen */}
-                  <div className="relative h-40 w-full overflow-hidden rounded-t-3xl">
-                    <img
-                      src={servicio.img}
-                      alt={servicio.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-105 group-hover:opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b13] via-[#0b0b13]/40 to-transparent" />
-                  </div>
-
-                  {/* Contenido */}
-                  <div className="relative p-6 pt-4">
-                    <div
-                      className={`-mt-12 mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 backdrop-blur-md ${servicio.bg} ${servicio.color} ${servicio.ring}`}
-                    >
-                      <Icon size={24} strokeWidth={1.7} />
-                    </div>
-
-                    <h3 className="text-lg font-bold">{servicio.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-slate-400">
-                      {servicio.description}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelected(servicio);
-                      }}
-                      className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-slate-500 transition group-hover:text-emerald-400"
-                    >
-                      Más información <ChevronRight size={14} />
-                    </button>
-                  </div>
-                </motion.article>
-              );
-            })}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Controles inferiores */}
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <button
-            onClick={prev}
-            aria-label="Anterior"
-            className="flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:border-emerald-400/40 hover:text-emerald-400 sm:hidden"
-          >
-            <ChevronLeft size={18} />
-          </button>
-
-          <div className="flex items-center gap-2">
-            {servicios.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                aria-label={`Ir al servicio ${i + 1}`}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === index
-                    ? "w-8 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
-                    : "w-2 bg-white/20 hover:bg-white/40"
-                }`}
-              />
-            ))}
+          {/* Controles inferiores (dots) */}
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {servicios.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  aria-label={`Ir al servicio ${i + 1}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === index
+                      ? "w-8 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
+                      : "w-2 bg-white/20 hover:bg-white/40"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-
-          <button
-            onClick={next}
-            aria-label="Siguiente"
-            className="flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:border-emerald-400/40 hover:text-emerald-400 sm:hidden"
-          >
-            <ChevronRight size={18} />
-          </button>
         </div>
-      </div>
+      )}
 
       {/* MODAL reutilizable */}
       <AnimatePresence>
         {selected && (
           <motion.div
             key="modal-backdrop"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => setSelected(null)}
           >
-            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-            {/* Contenido del modal */}
             <motion.div
               key="modal-content"
               onClick={(e) => e.stopPropagation()}
@@ -377,24 +396,20 @@ export default function Servicios() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 260, damping: 26 }}
-              className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#0b0b13] text-left shadow-[0_0_60px_-15px_rgba(52,211,153,0.5)]"
+              className="relative z-10 max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b13] text-left shadow-[0_0_60px_-15px_rgba(52,211,153,0.5)] sm:rounded-3xl"
             >
-              {/* Brillo superior */}
               <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 
-              {/* Botón cerrar */}
               <button
                 onClick={() => setSelected(null)}
                 aria-label="Cerrar"
-                className="absolute right-4 top-4 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400"
+                className="absolute right-3 top-3 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur transition hover:border-emerald-400/40 hover:text-emerald-400 sm:right-4 sm:top-4"
               >
                 <X size={18} />
               </button>
 
-              {/* Scroll interno */}
-              <div className="max-h-[90vh] overflow-y-auto">
-                {/* Imagen cabecera */}
-                <div className="relative h-52 w-full overflow-hidden">
+              <div className="max-h-[92vh] overflow-y-auto">
+                <div className="relative h-40 w-full overflow-hidden sm:h-52">
                   <img
                     src={selected.img}
                     alt={selected.title}
@@ -403,8 +418,7 @@ export default function Servicios() {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b13] via-[#0b0b13]/50 to-transparent" />
                 </div>
 
-                {/* Contenido */}
-                <div className="relative -mt-10 px-6 pb-8 sm:px-8">
+                <div className="relative -mt-10 px-5 pb-6 sm:px-8 sm:pb-8">
                   <div
                     className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ring-1 backdrop-blur-md ${selected.bg} ${selected.color} ${selected.ring}`}
                   >
@@ -414,7 +428,7 @@ export default function Servicios() {
                     })()}
                   </div>
 
-                  <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  <h3 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
                     {selected.title}
                   </h3>
                   <p className="mt-2 text-sm text-slate-400">
@@ -427,7 +441,6 @@ export default function Servicios() {
                     {selected.fullDescription}
                   </p>
 
-                  {/* Features */}
                   <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                     {selected.features.map((f) => (
                       <li
@@ -443,20 +456,19 @@ export default function Servicios() {
                     ))}
                   </ul>
 
-                  {/* CTA */}
-                  <div className="mt-8 flex flex-wrap gap-3">
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     <a
                       href={getWhatsAppLink(selected.title)}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setSelected(null)}
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0b0b13] transition hover:bg-emerald-300"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0b0b13] transition hover:bg-emerald-300"
                     >
                       Solicitar este servicio <ArrowRight size={16} />
                     </a>
                     <button
                       onClick={() => setSelected(null)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-emerald-400/40 hover:text-emerald-400"
                     >
                       Cerrar
                     </button>
